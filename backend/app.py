@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime, timedelta
 
 import requests
@@ -88,19 +89,46 @@ def classify(temp, feels, rain, wind, code):
     return "Cool", "primary", "Light layers recommended, especially in the evening."
 
 
+weather_cache = {}
+CACHE_SECONDS = 600
+
+
 def fetch_weather(lat, lon):
-    response = requests.get(
-        "https://api.open-meteo.com/v1/forecast",
-        params={
-            "latitude": lat,
-            "longitude": lon,
-            "current": "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,weather_code",
-            "timezone": "Asia/Manila",
-        },
-        timeout=15,
-    )
-    response.raise_for_status()
-    return response.json()["current"]
+    key = (round(lat, 1), round(lon, 1))
+    now = time.time()
+    cached = weather_cache.get(key)
+    if cached and now - cached[0] < CACHE_SECONDS:
+        return cached[1]
+
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = requests.get(
+                "https://api.open-meteo.com/v1/forecast",
+                params={
+                    "latitude": key[0],
+                    "longitude": key[1],
+                    "current": "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,weather_code",
+                    "timezone": "Asia/Manila",
+                },
+                timeout=15,
+            )
+            if response.status_code == 429:
+                last_error = "rate limited (429)"
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            response.raise_for_status()
+            current = response.json()["current"]
+            weather_cache[key] = (now, current)
+            return current
+        except (requests.RequestException, KeyError, ValueError) as error:
+            last_error = repr(error)
+            time.sleep(1)
+
+    app.logger.error("Open-Meteo failed: %s", last_error)
+    if cached:
+        return cached[1]
+    raise requests.RequestException(last_error)
 
 
 def valid_ph_point(lat, lon):
