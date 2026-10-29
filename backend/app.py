@@ -90,17 +90,24 @@ def classify(temp, feels, rain, wind, code):
 
 
 weather_cache = {}
-CACHE_SECONDS = 600
-
+# Pinalaki natin ang cache duration para kumonti ang requests (30 mins)
+CACHE_SECONDS = 1800 
 
 def fetch_weather(lat, lon):
     key = (round(lat, 1), round(lon, 1))
     now = time.time()
     cached = weather_cache.get(key)
+    
     if cached and now - cached[0] < CACHE_SECONDS:
         return cached[1]
 
     last_error = None
+    
+    headers = {
+        "User-Agent": "ClimateDetectorApp/1.0 (contact: your_email@example.com)"
+    }
+    
+    # 3 attempts, exponential backoff
     for attempt in range(3):
         try:
             response = requests.get(
@@ -111,23 +118,32 @@ def fetch_weather(lat, lon):
                     "current": "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,weather_code",
                     "timezone": "Asia/Manila",
                 },
+                headers=headers,
                 timeout=15,
             )
+            
             if response.status_code == 429:
                 last_error = "rate limited (429)"
-                time.sleep(1.5 * (attempt + 1))
+                wait_time = 2 * (2 ** attempt) 
+                app.logger.warning(f"Rate limited. Retrying in {wait_time}s... (Attempt {attempt+1}/3)")
+                time.sleep(wait_time)
                 continue
+                
             response.raise_for_status()
             current = response.json()["current"]
             weather_cache[key] = (now, current)
             return current
+            
         except (requests.RequestException, KeyError, ValueError) as error:
             last_error = repr(error)
-            time.sleep(1)
+            time.sleep(2) # Maghintay muna bago mag retry kapag may ibang error
 
-    app.logger.error("Open-Meteo failed: %s", last_error)
+    app.logger.error("Open-Meteo failed after retries: %s", last_error)
+    
     if cached:
+        app.logger.info("Returning stale cache data as fallback.")
         return cached[1]
+        
     raise requests.RequestException(last_error)
 
 
@@ -138,134 +154,3 @@ def valid_ph_point(lat, lon):
 @app.get("/api/health")
 def health():
     return jsonify(status="ok")
-
-
-@app.post("/api/signup")
-def signup():
-    data = request.get_json(silent=True) or {}
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    if not name or "@" not in email or len(password) < 6:
-        return jsonify(error="Enter a name, a valid email and a password with at least 6 characters."), 400
-    if User.query.filter_by(email=email).first():
-        return jsonify(error="This email is already registered."), 409
-
-    user = User(name=name, email=email, password_hash=generate_password_hash(password))
-    db.session.add(user)
-    db.session.commit()
-
-    token = create_access_token(identity=str(user.id))
-    return jsonify(token=token, user={"id": user.id, "name": user.name, "email": user.email}), 201
-
-
-@app.post("/api/login")
-def login():
-    data = request.get_json(silent=True) or {}
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    user = User.query.filter_by(email=email).first()
-    if not user or not check_password_hash(user.password_hash, password):
-        return jsonify(error="Incorrect email or password."), 401
-
-    token = create_access_token(identity=str(user.id))
-    return jsonify(token=token, user={"id": user.id, "name": user.name, "email": user.email})
-
-
-@app.get("/api/me")
-@jwt_required()
-def me():
-    user = db.session.get(User, int(get_jwt_identity()))
-    if not user:
-        return jsonify(error="User not found."), 404
-    return jsonify(id=user.id, name=user.name, email=user.email)
-
-
-@app.get("/api/cities")
-def cities():
-    return jsonify(CITIES)
-
-
-@app.get("/api/climate")
-@jwt_required()
-def climate():
-    try:
-        lat = float(request.args.get("lat", ""))
-        lon = float(request.args.get("lon", ""))
-    except ValueError:
-        return jsonify(error="Latitude and longitude are required."), 400
-
-    if not valid_ph_point(lat, lon):
-        return jsonify(error="Select a location inside the Philippines."), 400
-
-    try:
-        current = fetch_weather(lat, lon)
-    except requests.RequestException:
-        return jsonify(error="Weather service is unavailable. Try again shortly."), 502
-
-    temp = current.get("temperature_2m")
-    feels = current.get("apparent_temperature")
-    rain = current.get("precipitation")
-    wind = current.get("wind_speed_10m")
-    code = current.get("weather_code")
-    label = (request.args.get("label") or "").strip()[:120] or f"{lat:.2f}, {lon:.2f}"
-
-    climate_name, level, advice = classify(temp, feels, rain, wind, code)
-
-    db.session.add(
-        Search(
-            user_id=int(get_jwt_identity()),
-            label=label,
-            lat=lat,
-            lon=lon,
-            climate=climate_name,
-            temperature=temp,
-        )
-    )
-    db.session.commit()
-
-    return jsonify(
-        label=label,
-        lat=lat,
-        lon=lon,
-        climate=climate_name,
-        level=level,
-        advice=advice,
-        temperature=temp,
-        feels_like=feels,
-        humidity=current.get("relative_humidity_2m"),
-        rain=rain,
-        wind=wind,
-        time=current.get("time"),
-    )
-
-
-@app.get("/api/history")
-@jwt_required()
-def history():
-    rows = (
-        Search.query.filter_by(user_id=int(get_jwt_identity()))
-        .order_by(Search.created_at.desc())
-        .limit(10)
-        .all()
-    )
-    return jsonify(
-        [
-            {
-                "id": r.id,
-                "label": r.label,
-                "lat": r.lat,
-                "lon": r.lon,
-                "climate": r.climate,
-                "temperature": r.temperature,
-                "created_at": r.created_at.isoformat() + "Z",
-            }
-            for r in rows
-        ]
-    )
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
