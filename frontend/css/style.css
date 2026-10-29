@@ -1,0 +1,205 @@
+:root {
+  --ink: #0a2540;
+  --sea: #00a6c8;
+  --amber: #ffb000;
+  --haze: #eaf4f7;
+  --storm: #d1495b;
+  --leaf: #2a9d6f;
+}
+
+body {
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--haze);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+h1,
+h2,
+h3,
+.navbar-brand {
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.site-nav {
+  background: var(--ink);
+}
+
+.site-nav .nav-link {
+  color: #cfe6ee;
+}
+
+.site-nav .nav-link:hover,
+.site-nav .nav-link:focus-visible {
+  color: #fff;
+}
+
+.disabled-name {
+  color: var(--amber) !important;
+}
+
+.hero {
+  background: linear-gradient(160deg, var(--ink) 0%, #0d3b5e 60%, #0a5a73 100%);
+  color: #fff;
+  padding: 4.5rem 0 5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero h1 {
+  font-size: clamp(2.4rem, 7vw, 4.4rem);
+  font-weight: 800;
+  line-height: 1.02;
+  max-width: 14ch;
+}
+
+.hero p.lead {
+  max-width: 46ch;
+  color: #cfe6ee;
+}
+
+.reading {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  animation: settle 0.9s ease-out both;
+}
+
+.reading .big {
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.reading .tag {
+  color: var(--amber);
+  font-weight: 600;
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.feature h3 {
+  font-size: 1.15rem;
+}
+
+.auth-wrap {
+  max-width: 440px;
+  margin: 3rem auto;
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(10, 37, 64, 0.1);
+}
+
+.btn-sea {
+  background: var(--sea);
+  border-color: var(--sea);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-sea:hover,
+.btn-sea:focus-visible {
+  background: #008cab;
+  border-color: #008cab;
+  color: #fff;
+}
+
+#map {
+  height: 70vh;
+  min-height: 360px;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(10, 37, 64, 0.12);
+}
+
+.result-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  border-left: 6px solid var(--sea);
+}
+
+.result-card.level-danger {
+  border-left-color: var(--storm);
+}
+
+.result-card.level-warning {
+  border-left-color: var(--amber);
+}
+
+.result-card.level-success {
+  border-left-color: var(--leaf);
+}
+
+.result-card .place {
+  color: #5b7488;
+  font-size: 0.9rem;
+}
+
+.climate-name {
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.temp {
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0.25rem 0;
+}
+
+.advice {
+  color: #35526a;
+}
+
+.stats dt {
+  font-weight: 400;
+  color: #5b7488;
+}
+
+.stats dd {
+  text-align: right;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.history {
+  background: #fff;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+footer {
+  color: #5b7488;
+  font-size: 0.9rem;
+  padding: 1.5rem 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading {
+    animation: none;
+  }
+}

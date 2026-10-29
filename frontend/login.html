@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in | Philippine Climate Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg site-nav navbar-dark">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="index.html">Philippine Climate Detector</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto align-items-lg-center" id="nav-links"></ul>
+      </div>
+    </div>
+  </nav>
+  <main class="container">
+    <div class="auth-wrap">
+      <div id="auth-app" data-mode="login" class="auth-card">
+        <h1 class="h3 mb-4">{{ title }}</h1>
+        <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
+        <form @submit.prevent="submit">
+          
+          <div class="mb-3">
+            <label class="form-label" for="email">Email</label>
+            <input id="email" class="form-control" type="email" v-model.trim="email" required autocomplete="email">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="password">Password</label>
+            <input id="password" class="form-control" type="password" v-model="password" minlength="6" required autocomplete="current-password">
+          </div>
+          
+          <button class="btn btn-sea w-100" type="submit" :disabled="loading">
+            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>{{ button }}
+          </button>
+        </form>
+        <p class="mt-3 mb-0 text-center">New here? <a href="signup.html">Create an account</a></p>
+      </div>
+    </div>
+  </main>
+  <footer class="container text-center">Philippine Climate Detector &copy; <span id="year"></span></footer>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/vue-app.js"></script>
+</body>
+</html>
